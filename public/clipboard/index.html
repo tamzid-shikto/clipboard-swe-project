@@ -1,316 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clipboard</title>
 <style>
-  :root {
-    --board: #3d5a63;
-    --board-edge: #2f4850;
-    --sheet: #fbfcfb;
-    --ink: #1d2a30;
-    --ink-muted: #5d6e76;
-    --rule: #d9e0e2;
-    --accent: #0b6e7f;
-    --accent-ink: #ffffff;
-    --danger: #a3302a;
-    --text-bg: #f1f5f6;
-    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --board: #16232a;
-      --board-edge: #0f1a1f;
-      --sheet: #222f35;
-      --ink: #e8eef0;
-      --ink-muted: #9fb0b8;
-      --rule: #34444c;
-      --accent: #5cc4d6;
-      --accent-ink: #0d1d22;
-      --danger: #ff8d85;
-      --text-bg: #1a252a;
+    :root{
+        --orange:#f97316;
+        --orange-dark:#ea580c;
+        --orange-light:#ffedd5;
+        --bg:#fff7ed;
+        --border:#fed7aa;
+        --text:#431407;
+        --muted:#9a6b4b;
     }
-  }
-
-  * { box-sizing: border-box; }
-  html, body { margin: 0; min-height: 100%; }
-  body {
-    background: var(--board);
-    background-image: linear-gradient(180deg, var(--board) 0%, var(--board-edge) 100%);
-    background-attachment: fixed;
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 16px;
-    line-height: 1.5;
-    padding: 56px 16px 40px;
-  }
-
-  .sheet {
-    position: relative;
-    max-width: 760px;
-    margin: 0 auto;
-    background: var(--sheet);
-    border-radius: 6px;
-    padding: 56px 40px 36px;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-  }
-  /* the steel clip is the one decorative element */
-  .clip {
-    position: absolute;
-    top: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 140px;
-    height: 48px;
-    border-radius: 10px 10px 6px 6px;
-    background: linear-gradient(180deg, #eef2f3 0%, #b4bec3 45%, #8b989e 100%);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 0 6px 10px rgba(0, 0, 0, 0.3);
-  }
-  .clip::after {
-    content: "";
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 58px;
-    height: 10px;
-    border-radius: 999px;
-    background: #2b373c;
-    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
-  }
-
-  h1 {
-    font-family: var(--serif);
-    font-size: 2rem;
-    line-height: 1.2;
-    font-weight: 700;
-    margin: 0 0 20px;
-    overflow-wrap: anywhere;
-  }
-
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 28px;
-    margin: 0 0 24px;
-    padding: 0 0 16px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .meta div { min-width: 0; }
-  .meta dt { font-size: 0.8125rem; color: var(--ink-muted); }
-  .meta dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-
-  .text {
-    font-family: var(--mono);
-    font-size: 0.9375rem;
-    line-height: 1.6;
-    background: var(--text-bg);
-    border: 1px solid var(--rule);
-    border-radius: 4px;
-    padding: 16px 18px;
-    margin: 0;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    max-height: 60vh;
-    overflow: auto;
-  }
-  .text.empty { font-family: var(--sans); font-style: italic; color: var(--ink-muted); }
-
-  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
-  button, .button {
-    font: inherit;
-    font-weight: 600;
-    border-radius: 4px;
-    padding: 10px 18px;
-    cursor: pointer;
-    text-decoration: none;
-    border: 1px solid var(--accent);
-    background: var(--accent);
-    color: var(--accent-ink);
-    display: inline-block;
-  }
-  .button.secondary { background: transparent; color: var(--accent); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button:focus-visible, .button:focus-visible, input:focus-visible {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
-  .status { color: var(--ink-muted); font-size: 0.9375rem; min-height: 1.5em; }
-
-  .message p { margin: 0 0 20px; max-width: 52ch; color: var(--ink-muted); }
-  form.unlock { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
-  form.unlock label { font-weight: 600; }
-  form.unlock input {
-    font: inherit;
-    padding: 10px 12px;
-    border-radius: 4px;
-    border: 1px solid var(--ink-muted);
-    background: var(--sheet);
-    color: var(--ink);
-  }
-  form.unlock .error { color: var(--danger); font-weight: 600; min-height: 1.5em; margin: 0; }
-  form.unlock button { align-self: flex-start; }
-
-  [hidden] { display: none !important; }
-
-  @media (max-width: 560px) {
-    body { padding-top: 48px; }
-    .sheet { padding: 52px 20px 28px; }
-    h1 { font-size: 1.6rem; }
-  }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+        min-height:100vh;
+        background:var(--bg);
+        color:var(--text);
+        font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    svg.icon{
+        width:18px;
+        height:18px;
+        fill:none;
+        stroke:currentColor;
+        stroke-width:2;
+        stroke-linecap:round;
+        stroke-linejoin:round;
+        flex-shrink:0;
+    }
+    header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        padding:12px 20px;
+        background:#fff;
+        border-bottom:1px solid var(--border);
+    }
+    .brand{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        color:var(--orange);
+        font-size:20px;
+        font-weight:700;
+        text-decoration:none;
+    }
+    .brand svg.icon{width:24px;height:24px}
+    .nav{display:flex;gap:8px}
+    button{font:inherit;cursor:pointer}
+    .ghost{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        border:1px solid var(--border);
+        background:#fff;
+        color:var(--text);
+        padding:6px 10px;
+        border-radius:8px;
+        font-size:14px;
+        text-decoration:none;
+    }
+    .ghost:hover{
+        border-color:var(--orange);
+        color:var(--orange-dark);
+    }
+    .ghost.done{color:#15803d;border-color:#15803d}
+    main{
+        max-width:720px;
+        margin:0 auto;
+        padding:24px 16px;
+    }
+    .card{
+        background:#fff;
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:20px 24px;
+    }
+    h1{
+        font-size:20px;
+        overflow-wrap:anywhere;
+    }
+    .meta{
+        display:flex;
+        flex-wrap:wrap;
+        gap:12px;
+        margin-top:8px;
+        font-size:13px;
+        color:var(--muted);
+    }
+    .meta span{
+        display:flex;
+        align-items:center;
+        gap:4px;
+    }
+    .meta svg.icon{
+        width:14px;
+        height:14px;
+        color:var(--orange);
+    }
+    .text{
+        margin-top:16px;
+        padding:14px 16px;
+        background:var(--bg);
+        border:1px solid var(--border);
+        border-radius:8px;
+        white-space:pre-wrap;
+        overflow-wrap:anywhere;
+        font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+        font-size:14px;
+        min-height:80px;
+    }
+    .actions{
+        display:flex;
+        gap:8px;
+        margin-top:16px;
+    }
+    .center{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:8px;
+        padding:32px 16px;
+        color:var(--muted);
+        text-align:center;
+    }
+    .center svg.icon{
+        width:40px;
+        height:40px;
+        color:var(--orange);
+    }
+    .field{
+        position:relative;
+        width:100%;
+        max-width:320px;
+        margin-top:8px;
+    }
+    .field > svg.icon{
+        position:absolute;
+        left:12px;
+        top:50%;
+        transform:translateY(-50%);
+        color:var(--orange);
+        pointer-events:none;
+    }
+    .field input{
+        width:100%;
+        padding:11px 12px 11px 38px;
+        border:1px solid var(--border);
+        border-radius:8px;
+        font:inherit;
+        font-size:15px;
+        color:var(--text);
+        outline:none;
+    }
+    .field input:focus{
+        border-color:var(--orange);
+        box-shadow:0 0 0 3px var(--orange-light);
+    }
+    .error{
+        display:none;
+        align-items:center;
+        gap:6px;
+        color:#c2410c;
+        font-size:14px;
+    }
+    .error.show{display:flex}
+    .submit{
+        width:100%;
+        max-width:320px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        padding:11px;
+        border:none;
+        border-radius:8px;
+        background:var(--orange);
+        color:#fff;
+        font-size:15px;
+        font-weight:600;
+    }
+    .submit:hover{background:var(--orange-dark)}
+    .submit:disabled{opacity:.6;cursor:default}
+    .hidden{display:none !important}
 </style>
 </head>
 <body>
-  <main class="sheet" aria-live="polite">
-    <div class="clip" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute">
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></symbol>
+</svg>
 
-    <!-- loading -->
-    <section id="loading"><p class="status">Loading clipboard…</p></section>
+<header>
+    <a class="brand" href="/">
+        <svg class="icon"><use href="#i-clipboard"/></svg>
+        Clipboard
+    </a>
+    <div class="nav">
+        <a class="ghost hidden" id="editLink" href="#">
+            <svg class="icon"><use href="#i-pencil"/></svg>
+            Edit
+        </a>
+        <a class="ghost" id="homeLink" href="/auth/">Sign in</a>
+    </div>
+</header>
 
-    <!-- error or empty states -->
-    <section id="message" class="message" hidden>
-      <h1 id="message-title"></h1>
-      <p id="message-body"></p>
-      <a class="button secondary" href="/">Back to home</a>
-    </section>
+<main>
+    <!-- loading / not found / error -->
+    <div class="card center" id="message">Loading...</div>
 
     <!-- password prompt -->
-    <section id="locked" class="message" hidden>
-      <h1>This clipboard is password protected</h1>
-      <p>Enter the password the owner shared with you to read it.</p>
-      <form class="unlock" id="unlock-form">
-        <label for="password">Password</label>
-        <input id="password" type="password" autocomplete="off" required>
-        <p class="error" id="unlock-error" role="alert"></p>
-        <button type="submit">Open clipboard</button>
-      </form>
-    </section>
+    <div class="card center hidden" id="lock">
+        <svg class="icon"><use href="#i-key"/></svg>
+        <div>This clipboard is password protected.</div>
+        <div class="field">
+            <svg class="icon"><use href="#i-lock"/></svg>
+            <input id="password" type="password" placeholder="Password" autocomplete="off">
+        </div>
+        <div class="error" id="lockError">
+            <svg class="icon"><use href="#i-alert"/></svg>
+            <span></span>
+        </div>
+        <button class="submit" id="unlock">Unlock</button>
+    </div>
 
-    <!-- clipboard content -->
-    <section id="content" hidden>
-      <h1 id="title"></h1>
-      <dl class="meta">
-        <div><dt>Owner</dt><dd id="owner"></dd></div>
-        <div><dt>Visibility</dt><dd id="visibility"></dd></div>
-        <div><dt>Views</dt><dd id="views"></dd></div>
-        <div><dt>Expires</dt><dd id="expires"></dd></div>
-      </dl>
-      <pre class="text" id="text" tabindex="0"></pre>
-      <div class="actions">
-        <button type="button" id="copy">Copy text</button>
-        <a class="button secondary" id="edit" href="#" hidden>Edit clipboard</a>
-        <span class="status" id="copy-status" role="status"></span>
-      </div>
-    </section>
-  </main>
+    <!-- clipboard -->
+    <div class="card hidden" id="view">
+        <h1 id="title"></h1>
+        <div class="meta">
+            <span id="visibility"></span>
+            <span id="views"></span>
+            <span id="expiry" class="hidden"></span>
+        </div>
+        <div class="text" id="text"></div>
+        <div class="actions">
+            <button class="ghost" id="copyText">
+                <svg class="icon"><use href="#i-copy"/></svg>
+                Copy text
+            </button>
+            <button class="ghost" id="copyLink">
+                <svg class="icon"><use href="#i-copy"/></svg>
+                Copy link
+            </button>
+        </div>
+    </div>
+</main>
 
 <script>
-  const VISIBILITY = { 0: "Private", 1: "Public", 2: "Password protected" };
-  const params = new URLSearchParams(location.search);
-  const id = params.get("id");
+    const VISIBILITY = [
+        {label: "Private", icon: "i-lock"},
+        {label: "Public", icon: "i-globe"},
+        {label: "Password", icon: "i-key"}
+    ];
 
-  const $ = (name) => document.getElementById(name);
-  const sections = ["loading", "message", "locked", "content"];
+    const $ = id => document.getElementById(id);
+    const id = new URLSearchParams(location.search).get("id");
+    let password = "";
 
-  let password = "";
-  let passwordAttempted = false;
-  let currentText = "";
-
-  function show(name) {
-    for (const s of sections) $(s).hidden = s !== name;
-  }
-
-  function showMessage(title, body) {
-    document.title = title + " - Clipboard";
-    $("message-title").textContent = title;
-    $("message-body").textContent = body;
-    show("message");
-  }
-
-  function formatExpiry(expiresAt) {
-    if (!expiresAt) return "Never";
-    const when = new Date(expiresAt).toLocaleString();
-    return Date.now() > expiresAt ? "Expired on " + when : when;
-  }
-
-  function render(clipboard, isOwner) {
-    document.title = clipboard.title + " - Clipboard";
-    currentText = clipboard.text || "";
-
-    // textContent everywhere: clipboard text is user input and must never be parsed as HTML
-    $("title").textContent = clipboard.title;
-    $("owner").textContent = clipboard.owner;
-    $("visibility").textContent = VISIBILITY[clipboard.visibility] ?? "Unknown";
-    $("views").textContent = String(clipboard.views);
-    $("expires").textContent = formatExpiry(clipboard.expiresAt);
-
-    const textBox = $("text");
-    if (currentText) {
-      textBox.textContent = currentText;
-      textBox.classList.remove("empty");
-    } else {
-      textBox.textContent = "This clipboard is empty.";
-      textBox.classList.add("empty");
-    }
-    $("copy").disabled = !currentText;
-
-    $("edit").hidden = !isOwner;
-    $("edit").href = "/clipboard-editor/?id=" + encodeURIComponent(clipboard.id);
-    show("content");
-  }
-
-  async function load() {
-    if (!id) {
-      showMessage("No clipboard selected", "This link is missing a clipboard id. Ask the owner to share the full link again.");
-      return;
-    }
-    show("loading");
-
-    let body;
-    try {
-      // the password goes in a header, URI-encoded so any language works
-      const headers = password ? { "x-clipboard-password": encodeURIComponent(password) } : {};
-      const res = await fetch("/api/get-clipboard?id=" + encodeURIComponent(id), { headers });
-      body = await res.json();
-    } catch {
-      showMessage("Can't reach the server", "Check your connection, then reload this page.");
-      return;
+    function icon(name){
+        return '<svg class="icon"><use href="#' + name + '"/></svg>';
     }
 
-    if (body.success) {
-      render(body.data, body.isOwner);
-    } else if (body.error === "Wrong password") {
-      $("unlock-error").textContent = passwordAttempted ? "Wrong password. Try again." : "";
-      show("locked");
-      $("password").focus();
-    } else {
-      showMessage("Clipboard not found", "It may have been deleted, expired, or made private by its owner.");
+    function show(which){
+        for(const name of ["message", "lock", "view"]){
+            $(name).classList.toggle("hidden", name !== which);
+        }
     }
-  }
 
-  $("unlock-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    password = $("password").value;
-    passwordAttempted = true;
-    $("password").value = "";
+    function showMessage(text){
+        $("message").textContent = text;
+        show("message");
+    }
+
+    async function load(){
+        if(!id){
+            return showMessage("No clipboard id given.");
+        }
+        let res;
+        try{
+            res = await fetch("/api/get-clipboard?id=" + encodeURIComponent(id), {
+                headers: password ? {"x-clipboard-password": encodeURIComponent(password)} : {}
+            });
+        }catch{
+            return showMessage("Could not reach the server.");
+        }
+        const result = await res.json();
+
+        if(res.status === 401){
+            // password needed (or wrong); only show the error after an attempt
+            show("lock");
+            const err = $("lockError");
+            err.classList.toggle("show", password !== "");
+            err.querySelector("span").textContent = result.error || "Wrong password";
+            $("password").focus();
+            return;
+        }
+        if(!res.ok || !result.success){
+            return showMessage(result.error === "Not found" ? "Clipboard not found or expired." : (result.error || "Something went wrong."));
+        }
+        render(result.data, result.isOwner);
+    }
+
+    function render(c, isOwner){
+        const vis = VISIBILITY[c.visibility] ?? VISIBILITY[1];
+        document.title = c.title + " - Clipboard";
+        $("title").textContent = c.title;
+        $("text").textContent = c.text;
+        $("visibility").innerHTML = icon(vis.icon) + vis.label;
+        $("views").innerHTML = icon("i-eye") + c.views + (c.views === 1 ? " view" : " views");
+        if(c.expiresAt){
+            $("expiry").innerHTML = icon("i-clock") + "Expires " + new Date(c.expiresAt).toLocaleString();
+            $("expiry").classList.remove("hidden");
+        }
+        if(isOwner){
+            $("editLink").href = "/clipboard-editor/?id=" + encodeURIComponent(c.id);
+            $("editLink").classList.remove("hidden");
+            $("homeLink").textContent = "Dashboard";
+            $("homeLink").href = "/dashboard/";
+        }
+        show("view");
+    }
+
+    function flash(button, label){
+        const old = button.innerHTML;
+        button.innerHTML = icon("i-check") + label;
+        button.classList.add("done");
+        setTimeout(() => {
+            button.innerHTML = old;
+            button.classList.remove("done");
+        }, 1200);
+    }
+
+    $("unlock").addEventListener("click", () => {
+        password = $("password").value;
+        load();
+    });
+    $("password").addEventListener("keydown", e => {
+        if(e.key === "Enter") $("unlock").click();
+    });
+
+    $("copyText").addEventListener("click", async e => {
+        await navigator.clipboard.writeText($("text").textContent);
+        flash(e.currentTarget, "Copied");
+    });
+    $("copyLink").addEventListener("click", async e => {
+        await navigator.clipboard.writeText(location.origin + "/clipboard/?id=" + encodeURIComponent(id));
+        flash(e.currentTarget, "Copied");
+    });
+
     load();
-  });
-
-  $("copy").addEventListener("click", async () => {
-    const status = $("copy-status");
-    try {
-      await navigator.clipboard.writeText(currentText);
-      status.textContent = "Copied to your clipboard.";
-    } catch {
-      status.textContent = "Couldn't copy automatically. Select the text and copy it manually.";
-    }
-    setTimeout(() => { status.textContent = ""; }, 3000);
-  });
-
-  load();
 </script>
 </body>
 </html>
