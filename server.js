@@ -37,6 +37,10 @@ function unauthorized(res){
     res.status(401).json({success:false, error:"Unauthorized"});
 }
 
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.post("/api/auth", async (req, res)=>{
     const mode = req.query.mode; //?mode=login    ?mode=signup
     const { username, password } = req.body;
