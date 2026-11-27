@@ -1,1 +1,316 @@
-//clipboard.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipboard</title>
+<style>
+  :root {
+    --board: #3d5a63;
+    --board-edge: #2f4850;
+    --sheet: #fbfcfb;
+    --ink: #1d2a30;
+    --ink-muted: #5d6e76;
+    --rule: #d9e0e2;
+    --accent: #0b6e7f;
+    --accent-ink: #ffffff;
+    --danger: #a3302a;
+    --text-bg: #f1f5f6;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --board: #16232a;
+      --board-edge: #0f1a1f;
+      --sheet: #222f35;
+      --ink: #e8eef0;
+      --ink-muted: #9fb0b8;
+      --rule: #34444c;
+      --accent: #5cc4d6;
+      --accent-ink: #0d1d22;
+      --danger: #ff8d85;
+      --text-bg: #1a252a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--board);
+    background-image: linear-gradient(180deg, var(--board) 0%, var(--board-edge) 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 56px 16px 40px;
+  }
+
+  .sheet {
+    position: relative;
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--sheet);
+    border-radius: 6px;
+    padding: 56px 40px 36px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+  /* the steel clip is the one decorative element */
+  .clip {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 48px;
+    border-radius: 10px 10px 6px 6px;
+    background: linear-gradient(180deg, #eef2f3 0%, #b4bec3 45%, #8b989e 100%);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 0 6px 10px rgba(0, 0, 0, 0.3);
+  }
+  .clip::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 58px;
+    height: 10px;
+    border-radius: 999px;
+    background: #2b373c;
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.6);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    line-height: 1.2;
+    font-weight: 700;
+    margin: 0 0 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin: 0 0 24px;
+    padding: 0 0 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .meta div { min-width: 0; }
+  .meta dt { font-size: 0.8125rem; color: var(--ink-muted); }
+  .meta dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+  .text {
+    font-family: var(--mono);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    background: var(--text-bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 60vh;
+    overflow: auto;
+  }
+  .text.empty { font-family: var(--sans); font-style: italic; color: var(--ink-muted); }
+
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  button, .button {
+    font: inherit;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 10px 18px;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    display: inline-block;
+  }
+  .button.secondary { background: transparent; color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:focus-visible, .button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .status { color: var(--ink-muted); font-size: 0.9375rem; min-height: 1.5em; }
+
+  .message p { margin: 0 0 20px; max-width: 52ch; color: var(--ink-muted); }
+  form.unlock { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+  form.unlock label { font-weight: 600; }
+  form.unlock input {
+    font: inherit;
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--ink-muted);
+    background: var(--sheet);
+    color: var(--ink);
+  }
+  form.unlock .error { color: var(--danger); font-weight: 600; min-height: 1.5em; margin: 0; }
+  form.unlock button { align-self: flex-start; }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 560px) {
+    body { padding-top: 48px; }
+    .sheet { padding: 52px 20px 28px; }
+    h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+  <main class="sheet" aria-live="polite">
+    <div class="clip" aria-hidden="true"></div>
+
+    <!-- loading -->
+    <section id="loading"><p class="status">Loading clipboard…</p></section>
+
+    <!-- error or empty states -->
+    <section id="message" class="message" hidden>
+      <h1 id="message-title"></h1>
+      <p id="message-body"></p>
+      <a class="button secondary" href="/">Back to home</a>
+    </section>
+
+    <!-- password prompt -->
+    <section id="locked" class="message" hidden>
+      <h1>This clipboard is password protected</h1>
+      <p>Enter the password the owner shared with you to read it.</p>
+      <form class="unlock" id="unlock-form">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="off" required>
+        <p class="error" id="unlock-error" role="alert"></p>
+        <button type="submit">Open clipboard</button>
+      </form>
+    </section>
+
+    <!-- clipboard content -->
+    <section id="content" hidden>
+      <h1 id="title"></h1>
+      <dl class="meta">
+        <div><dt>Owner</dt><dd id="owner"></dd></div>
+        <div><dt>Visibility</dt><dd id="visibility"></dd></div>
+        <div><dt>Views</dt><dd id="views"></dd></div>
+        <div><dt>Expires</dt><dd id="expires"></dd></div>
+      </dl>
+      <pre class="text" id="text" tabindex="0"></pre>
+      <div class="actions">
+        <button type="button" id="copy">Copy text</button>
+        <a class="button secondary" id="edit" href="#" hidden>Edit clipboard</a>
+        <span class="status" id="copy-status" role="status"></span>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const VISIBILITY = { 0: "Private", 1: "Public", 2: "Password protected" };
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+
+  const $ = (name) => document.getElementById(name);
+  const sections = ["loading", "message", "locked", "content"];
+
+  let password = "";
+  let passwordAttempted = false;
+  let currentText = "";
+
+  function show(name) {
+    for (const s of sections) $(s).hidden = s !== name;
+  }
+
+  function showMessage(title, body) {
+    document.title = title + " - Clipboard";
+    $("message-title").textContent = title;
+    $("message-body").textContent = body;
+    show("message");
+  }
+
+  function formatExpiry(expiresAt) {
+    if (!expiresAt) return "Never";
+    const when = new Date(expiresAt).toLocaleString();
+    return Date.now() > expiresAt ? "Expired on " + when : when;
+  }
+
+  function render(clipboard, isOwner) {
+    document.title = clipboard.title + " - Clipboard";
+    currentText = clipboard.text || "";
+
+    // textContent everywhere: clipboard text is user input and must never be parsed as HTML
+    $("title").textContent = clipboard.title;
+    $("owner").textContent = clipboard.owner;
+    $("visibility").textContent = VISIBILITY[clipboard.visibility] ?? "Unknown";
+    $("views").textContent = String(clipboard.views);
+    $("expires").textContent = formatExpiry(clipboard.expiresAt);
+
+    const textBox = $("text");
+    if (currentText) {
+      textBox.textContent = currentText;
+      textBox.classList.remove("empty");
+    } else {
+      textBox.textContent = "This clipboard is empty.";
+      textBox.classList.add("empty");
+    }
+    $("copy").disabled = !currentText;
+
+    $("edit").hidden = !isOwner;
+    $("edit").href = "/clipboard-editor/?id=" + encodeURIComponent(clipboard.id);
+    show("content");
+  }
+
+  async function load() {
+    if (!id) {
+      showMessage("No clipboard selected", "This link is missing a clipboard id. Ask the owner to share the full link again.");
+      return;
+    }
+    show("loading");
+
+    let body;
+    try {
+      // the password goes in a header, URI-encoded so any language works
+      const headers = password ? { "x-clipboard-password": encodeURIComponent(password) } : {};
+      const res = await fetch("/api/get-clipboard?id=" + encodeURIComponent(id), { headers });
+      body = await res.json();
+    } catch {
+      showMessage("Can't reach the server", "Check your connection, then reload this page.");
+      return;
+    }
+
+    if (body.success) {
+      render(body.data, body.isOwner);
+    } else if (body.error === "Wrong password") {
+      $("unlock-error").textContent = passwordAttempted ? "Wrong password. Try again." : "";
+      show("locked");
+      $("password").focus();
+    } else {
+      showMessage("Clipboard not found", "It may have been deleted, expired, or made private by its owner.");
+    }
+  }
+
+  $("unlock-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    password = $("password").value;
+    passwordAttempted = true;
+    $("password").value = "";
+    load();
+  });
+
+  $("copy").addEventListener("click", async () => {
+    const status = $("copy-status");
+    try {
+      await navigator.clipboard.writeText(currentText);
+      status.textContent = "Copied to your clipboard.";
+    } catch {
+      status.textContent = "Couldn't copy automatically. Select the text and copy it manually.";
+    }
+    setTimeout(() => { status.textContent = ""; }, 3000);
+  });
+
+  load();
+</script>
+</body>
+</html>
