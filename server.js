@@ -69,21 +69,19 @@ app.post("/api/delete-clipboard", async (req, res)=>{
     }
     res.json(await clipboards.remove(req.query.id, user));
 })
-app.get("/api/get-clipboard", (req, res)=>{
-    const id = req.query.id; //?id=[CLIPBOARD_ID]
-    const session_token = req.cookies.session_token;   
-    //auth check
-    //logic codes
-    //if not owner, add visitor count
-    //res.json({success, data}) 
+app.get("/api/edit-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.getForEdit(req.query.id, user));
 })
-app.post("/api/save-clipboard", (req, res)=>{
-    const id = req.query.id; //?id=[CLIPBOARD_ID]
-    const data = res.body;
-    const session_token = req.cookies.session_token;   
-    //auth check
-    //logic codes
-    //res.json({success}) 
+app.post("/api/save-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.update(req.query.id, user, req.body));
 })
 
 app.listen(PORT, _=>{
