@@ -33,6 +33,10 @@ function readPassword(req){
     try{ return decodeURIComponent(raw); }catch{ return ""; }
 }
 
+function unauthorized(res){
+    res.status(401).json({success:false, error:"Unauthorized"});
+}
+
 app.post("/api/auth", async (req, res)=>{
     const mode = req.query.mode; //?mode=login    ?mode=signup
     const { username, password } = req.body;
@@ -49,11 +53,32 @@ app.post("/api/auth", async (req, res)=>{
     });
     res.json(result);
 })
-app.get("/api/list-clipboard", (req, res)=>{
-    const session_token = req.cookies.session_token;   
-    //auth check
-    //logic codes
-    //res.json({success, data}) 
+app.post("/api/logout", (req, res)=>{
+    delete SESSIONS[req.cookies.session_token];
+    res.clearCookie("session_token");
+    res.json({success:true});
+})
+app.get("/api/list-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    const result = await clipboards.list(user);
+    res.json({...result, username:user});
+})
+app.post("/api/create-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.create(user));
+})
+app.post("/api/delete-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.remove(req.query.id, user));
 })
 app.get("/api/get-clipboard", async (req, res)=>{
     const id = req.query.id; //?id=[CLIPBOARD_ID]
@@ -69,14 +94,19 @@ app.get("/api/get-clipboard", async (req, res)=>{
     // view() already counts the visit when the viewer is not the owner
     res.json({...result, isOwner: viewer !== null && result.data.owner === viewer});
 })
-app.post("/api/save-clipboard", (req, res)=>{
-    const id = req.query.id; //?id=[CLIPBOARD_ID]
-    const data = res.body;
-    const session_token = req.cookies.session_token;   
-    //auth check
-    //logic codes
-    //res.json({success}) 
+app.get("/api/edit-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.getForEdit(req.query.id, user));
 })
+app.post("/api/save-clipboard", async (req, res)=>{
+    const user = currentUser(req);
+    if(!user){
+        return unauthorized(res);
+    }
+    res.json(await clipboards.update(req.query.id, user, req.body));
 
 app.listen(PORT, _=>{
     console.log("STARTED SERVER ON PORT: ", PORT)
