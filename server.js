@@ -1,7 +1,9 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const { randomUUID } = require('crypto');
+const path = require("path");
 
+const PORT = 3000;
 const app = express();
 app.use(cookieParser());
 app.use(express.json());
@@ -46,4 +48,8 @@ app.post("/api/save-clipboard", (req, res)=>{
     //auth check
     //logic codes
     //res.json({success}) 
+})
+
+app.listen(PORT, _=>{
+    console.log("STARTED SERVER ON PORT: ", PORT)
 })
