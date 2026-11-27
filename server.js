@@ -107,6 +107,7 @@ app.post("/api/save-clipboard", async (req, res)=>{
         return unauthorized(res);
     }
     res.json(await clipboards.update(req.query.id, user, req.body));
+});
 
 app.listen(PORT, _=>{
     console.log("STARTED SERVER ON PORT: ", PORT)
