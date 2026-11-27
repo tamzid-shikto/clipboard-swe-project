@@ -1,1 +1,89 @@
-//index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clipboard</title>
+<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+        background:#fff7ed;
+        color:#431407;
+        font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    section{max-width:800px;margin:0 auto;padding:48px 20px;text-align:center}
+    .hero{padding-top:80px}
+    h1{font-size:40px;color:#f97316;margin-bottom:12px}
+    h2{font-size:24px;margin-bottom:24px}
+    p{color:#9a6b4b}
+    .hero p{max-width:420px;margin:0 auto 20px}
+    .btn{
+        display:inline-block;
+        padding:10px 22px;
+        border-radius:6px;
+        background:#f97316;
+        color:#fff;
+        text-decoration:none;
+    }
+    .btn:hover{background:#ea580c}
+    .features{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:16px;
+        text-align:left;
+    }
+    .card{
+        padding:16px;
+        background:#fff;
+        border:1px solid #fed7aa;
+        border-radius:8px;
+    }
+    .card h3{font-size:16px;margin-bottom:6px}
+    .card p{font-size:14px}
+    footer{padding:24px;text-align:center;font-size:14px;color:#9a6b4b}
+</style>
+</head>
+<body>
+    <section class="hero">
+        <h1>Clipboard</h1>
+        <p>Write text, set who can see it, and share it with a link.</p>
+        <a class="btn" href="/auth/">Get started</a>
+    </section>
+
+    <section>
+        <h2>Features</h2>
+        <div class="features">
+            <div class="card">
+                <h3>Share with a link</h3>
+                <p>Every clipboard gets its own short link you can send to anyone.</p>
+            </div>
+            <div class="card">
+                <h3>Control who sees it</h3>
+                <p>Make it private, public, or protected by a password.</p>
+            </div>
+            <div class="card">
+                <h3>Auto expiry</h3>
+                <p>Set an expiry date and the clipboard stops being visible after it.</p>
+            </div>
+            <div class="card">
+                <h3>View counter</h3>
+                <p>See how many times your clipboards have been viewed.</p>
+            </div>
+            <div class="card">
+                <h3>Simple editor</h3>
+                <p>Create, edit, and delete clipboards from one page.</p>
+            </div>
+            <div class="card">
+                <h3>Your own account</h3>
+                <p>Sign up and manage all your clipboards from a dashboard.</p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <a class="btn" href="/auth/">Create your first clipboard</a>
+    </section>
+
+    <footer>Clipboard &middot; CSE 3206 project</footer>
+</body>
+</html>
